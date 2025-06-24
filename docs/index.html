@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>情绪星空图</title>
+  <style>
+    body { background:#111; color:#eee; text-align:center; font-family: sans-serif; }
+    img  { max-width: 90%; height: auto; margin-top: 2em; }
+  </style>
+</head>
+<body>
+  <h1>情绪星空图</h1>
+  <!-- 动态加载图表 -->
+  <img id="emotionImg" alt="情绪星空图" />
+  <p>数据最后更新：<span id="date"></span></p>
+  <script>
+  (async function() {
+    const img = document.getElementById('emotionImg');
+    const dateSpan = document.getElementById('date');
+    if (!img || !dateSpan) return;
+
+    // 初始化日期并调整为本地时区（UTC+8）
+    let date = new Date();
+    date = new Date(date.getTime() + (date.getTimezoneOffset() + 480) * 60000);
+
+    dateSpan.textContent = '搜索中...';
+    const maxAttempts = 7;
+    let found = false;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      const yyyy = date.getFullYear();
+      const mm   = String(date.getMonth() + 1).padStart(2, '0');
+      const dd   = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      // —— 这里是改动处 —— 
+      // 原来可能是 emotion-sky_…，现在改成 emotion_sky_…
+      const fileName = `emotion_sky_${yyyy}${mm}${dd}.png`;
+      const srcPath  = `output/${dateStr}/${fileName}`;
+
+      try {
+        const res = await fetch(srcPath, { method: 'HEAD' });
+        if (res.ok) {
+          img.src = srcPath;
+          dateSpan.textContent = dateStr;
+          found = true;
+          break;
+        }
+      } catch (e) {
+        console.error('Fetch error for', srcPath, e);
+      }
+
+      // 回退到前一天再试
+      date.setDate(date.getDate() - 1);
+    }
+
+    if (!found) {
+      img.style.display = 'none';
+      dateSpan.textContent = '暂无可用数据';
+      const placeholder = document.createElement('div');
+      placeholder.textContent = '未找到情绪星空图';
+      placeholder.style.color = '#eee';
+      placeholder.style.marginTop = '2em';
+      document.body.appendChild(placeholder);
+    }
+  })();
+</script>
+</body>
+</html>

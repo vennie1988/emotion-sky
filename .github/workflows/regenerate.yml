@@ -1,0 +1,40 @@
+name: Regenerate Emotion Sky
+
+on:
+  schedule:
+    # 每天晚上 8 点（UTC）触发一次
+    - cron: '0 20 * * *'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install deps
+        run: |
+          pip install matplotlib numpy pillow
+
+      - name: Generate chart
+        run: |
+          python generate_ai_emotion_wheel.py
+
+      - name: Copy latest image
+        run: |
+          # 找到最新图片并链接为 latest.png
+          LATEST=$(ls docs/output/*/emotion_sky_*.png | sort | tail -n1)
+          cp "$LATEST" docs/output/latest.png
+
+      - name: Commit & Push
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "🛰️ Update emotion sky chart"
+          file_pattern: |
+            docs/output/**
+            docs/index.html

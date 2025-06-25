@@ -6,24 +6,48 @@
   <style>
     body { background:#111; color:#eee; text-align:center; font-family: sans-serif; }
     img  { max-width: 90%; height: auto; margin-top: 2em; }
+    /* Loading spinner */
+    .loader {
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #00bfc4;
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    /* Fade-in for image */
+    #emotionImg {
+      opacity: 0;
+      transition: opacity 0.5s ease-in;
+    }
   </style>
 </head>
 <body>
   <h1>情绪星空图</h1>
   <!-- 动态加载图表 -->
   <img id="emotionImg" alt="情绪星空图" />
+  <div id="loader" class="loader"></div>
+  <p id="status" style="color:#ccc;">初始化中...</p>
   <p>数据最后更新：<span id="date"></span></p>
   <script>
   (async function() {
     const img = document.getElementById('emotionImg');
     const dateSpan = document.getElementById('date');
+    const loader = document.getElementById('loader');
+    const status = document.getElementById('status');
     if (!img || !dateSpan) return;
 
     // 初始化日期并调整为本地时区（UTC+8）
     let date = new Date();
     date = new Date(date.getTime() + (date.getTimezoneOffset() + 480) * 60000);
 
-    dateSpan.textContent = '搜索中...';
+    loader.style.display = 'block';
+    status.textContent = '搜索中...';
     const maxAttempts = 7;
     let found = false;
 
@@ -33,9 +57,11 @@
       const dd   = String(date.getDate()).padStart(2, '0');
       const dateStr = `${yyyy}-${mm}-${dd}`;
       // —— 这里是改动处 —— 
-      // 原来可能是 emotion-sky_…，现在改成 emotion_sky_…
-      const fileName = `emotion_sky_${yyyy}${mm}${dd}.png`;
+      // 原来可能是 emotion-sky_…，现在改成 emotion_sky_…，并且文件为 rotating.gif
+      const fileName = `emotion_sky_${yyyy}${mm}${dd}_rotating.gif`;
       const srcPath  = `output/${dateStr}/${fileName}`;
+
+      status.textContent = `搜索中...第 ${i+1} 次尝试（${dateStr}）`;
 
       try {
         const res = await fetch(srcPath, { method: 'HEAD' });
@@ -43,6 +69,12 @@
           img.src = srcPath;
           dateSpan.textContent = dateStr;
           found = true;
+          loader.style.display = 'none';
+          status.textContent = `找到图表：${dateStr}`;
+          // Fade-in image
+          img.style.opacity = 0;
+          img.onload = () => img.style.opacity = 1;
+          // 对 GIF 图像也应用淡入效果
           break;
         }
       } catch (e) {
@@ -54,6 +86,8 @@
     }
 
     if (!found) {
+      loader.style.display = 'none';
+      status.textContent = '暂无可用数据';
       img.style.display = 'none';
       dateSpan.textContent = '暂无可用数据';
       const placeholder = document.createElement('div');
